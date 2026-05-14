@@ -1,3 +1,5 @@
+import 'package:dealz/_base/constant.dart';
+import 'package:dealz/screens/product_card.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA), // Fond gris très clair
+      backgroundColor: Constant.backgroundColor, // Fond gris très clair
       body: CustomScrollView(
         slivers: [
           // 1. Barre d'application avec recherche
@@ -29,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
             expandedHeight: 120.0,
             floating: true,
             pinned: true,
-            backgroundColor: Color(0xFF2D6A4F), // Vert Revina
+            backgroundColor: Constant.primaireColor,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -46,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: Color(0xFF2D6A4F),
+                      color: Constant.primaireColor,
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(vertical: 13),
@@ -71,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ChoiceChip(
                       label: Text(categories[index]),
                       selected: isSelected,
-                      selectedColor: Color(0xFF2D6A4F),
+                      selectedColor: Constant.primaireColor,
+                      backgroundColor: Colors.white,
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
                         fontWeight: FontWeight.w600,
@@ -108,81 +111,12 @@ class _HomeScreenState extends State<HomeScreen> {
       // Bouton Flottant pour Vendre
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {},
-        backgroundColor: Color(0xFFFFB100), // Ambre pour l'action
+        backgroundColor: Constant.secondaryColor, // Ambre pour l'action
         icon: Icon(Icons.add_a_photo, color: Colors.white),
         label: Text(
           "Vendre",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-      ),
-    );
-  }
-}
-
-// Widget de la Carte Produit
-class ProductCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image de l'article
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-                image: DecorationImage(
-                  image: NetworkImage(
-                    'https://via.placeholder.com/150',
-                  ), // Remplacer par l'image réelle
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Veste en jean",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "7 500 FCFA",
-                  style: TextStyle(
-                    color: Color(0xFF2D6A4F),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 12, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      "Bamako, ACI",
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
