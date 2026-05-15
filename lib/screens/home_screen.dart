@@ -1,6 +1,8 @@
 import 'package:dealz/_base/constant.dart';
+import 'package:dealz/screens/add_product_screen.dart';
 import 'package:dealz/screens/product_card.dart';
 import 'package:dealz/screens/product_detail_screen.dart';
+import 'package:dealz/screens/profil_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -35,7 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(8.0),
           child: GestureDetector(
             onTap: () {
-              // Action vers le profil
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilScreen()),
+              );
             },
             child: const CircleAvatar(
               backgroundColor: Colors.white24,
@@ -201,7 +206,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductScreen()),
+          );
+        },
         backgroundColor: Constant.primaireColor,
         icon: const Icon(LucideIcons.plus, color: Colors.white),
         label: const Text(
