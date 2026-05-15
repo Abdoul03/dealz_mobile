@@ -27,9 +27,7 @@ class _ProductCardState extends State<ProductCard> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
                 image: DecorationImage(
-                  image: AssetImage(
-                    'assets/images/jordan-air-jordan.webp',
-                  ), // Remplacer par l'image réelle
+                  image: AssetImage('assets/images/jordan-air-jordan.webp'),
                   fit: BoxFit.cover,
                 ),
               ),
