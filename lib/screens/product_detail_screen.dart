@@ -1,5 +1,6 @@
 import 'package:dealz/_base/constant.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key});
@@ -56,14 +57,14 @@ class ProductDetailScreen extends StatelessWidget {
                           Text(
                             "Veste en jean Zara",
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             "10 000 FCFA",
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Constant.primaireColor,
                             ),
@@ -75,14 +76,22 @@ class ProductDetailScreen extends StatelessWidget {
                       // Localisation et Temps
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 16, color: Colors.grey),
+                          Icon(
+                            LucideIcons.map_pin,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             "Bamako, Hamdallaye",
                             style: TextStyle(color: Colors.grey),
                           ),
                           SizedBox(width: 15),
-                          Icon(Icons.access_time, size: 16, color: Colors.grey),
+                          Icon(
+                            LucideIcons.alarm_clock,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             "Il y a 2 heures",
@@ -133,7 +142,10 @@ class ProductDetailScreen extends StatelessWidget {
                             CircleAvatar(
                               radius: 25,
                               backgroundColor: Colors.grey[300],
-                              child: Icon(Icons.person, color: Colors.white),
+                              child: Icon(
+                                LucideIcons.user,
+                                color: Colors.white,
+                              ),
                             ),
                             SizedBox(width: 15),
                             Expanded(
@@ -150,7 +162,7 @@ class ProductDetailScreen extends StatelessWidget {
                                   Row(
                                     children: [
                                       Icon(
-                                        Icons.star,
+                                        LucideIcons.star,
                                         color: Constant.secondaryColor,
                                         size: 16,
                                       ),
@@ -194,7 +206,7 @@ class ProductDetailScreen extends StatelessWidget {
             child: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(LucideIcons.arrow_left, color: Colors.black),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -222,7 +234,10 @@ class ProductDetailScreen extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {},
-                      icon: Icon(Icons.chat_bubble_outline),
+                      icon: Icon(
+                        LucideIcons.message_circle,
+                        color: Constant.primaireColor,
+                      ),
                       label: Text("Message"),
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 15),

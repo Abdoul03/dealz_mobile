@@ -2,6 +2,7 @@ import 'package:dealz/_base/constant.dart';
 import 'package:dealz/screens/product_card.dart';
 import 'package:dealz/screens/product_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Constant.primaireColor,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         // 1. PROFIL À GAUCHE
         leading: Padding(
@@ -37,14 +39,14 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: const CircleAvatar(
               backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
+              child: Icon(LucideIcons.user, color: Colors.white, size: 20),
             ),
           ),
         ),
         // 2. MESSAGERIE ET PANIER À DROITE
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_outlined, color: Colors.white),
+            icon: const Icon(LucideIcons.message_circle, color: Colors.white),
             onPressed: () {
               // Action vers la messagerie
             },
@@ -54,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 icon: const Icon(
-                  Icons.shopping_cart_outlined,
+                  LucideIcons.shopping_cart,
                   color: Colors.white,
                 ),
                 onPressed: () {
@@ -94,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 50, // Réduit car le titre est déjà en haut
+            expandedHeight: 55, // Réduit car le titre est déjà en haut
             floating: true,
             pinned: true,
             backgroundColor: Constant.primaireColor,
@@ -115,13 +117,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: "Rechercher un objet...",
+                    hintText: "Rechercher...",
                     hintStyle: const TextStyle(
                       fontSize: 13,
                       color: Colors.grey,
                     ),
                     prefixIcon: Icon(
-                      Icons.search,
+                      LucideIcons.search,
                       size: 20,
                       color: Constant.primaireColor,
                     ),
@@ -201,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {},
         backgroundColor: Constant.primaireColor,
-        icon: const Icon(Icons.add_a_photo, color: Colors.white),
+        icon: const Icon(LucideIcons.plus, color: Colors.white),
         label: const Text(
           "Vendre",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

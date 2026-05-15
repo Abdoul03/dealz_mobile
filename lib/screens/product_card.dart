@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ProductCard extends StatefulWidget {
   const ProductCard({super.key});
@@ -56,7 +57,7 @@ class _ProductCardState extends State<ProductCard> {
                 SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 12, color: Colors.grey),
+                    Icon(LucideIcons.map_pin, size: 12, color: Colors.grey),
                     SizedBox(width: 4),
                     Text(
                       "Bamako, ACI",
