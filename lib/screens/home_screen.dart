@@ -1,5 +1,7 @@
 import 'package:dealz/_base/constant.dart';
 import 'package:dealz/screens/add_product_screen.dart';
+import 'package:dealz/screens/cart_screen.dart';
+import 'package:dealz/screens/message_screen.dart';
 import 'package:dealz/screens/product_card.dart';
 import 'package:dealz/screens/product_detail_screen.dart';
 import 'package:dealz/screens/profil_screen.dart';
@@ -54,6 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(LucideIcons.message_circle, color: Colors.white),
             onPressed: () {
               // Action vers la messagerie
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MessageScreen()),
+              );
             },
           ),
           Stack(
@@ -66,6 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 onPressed: () {
                   // Action vers le panier
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CartScreen()),
+                  );
                 },
               ),
               // Badge optionnel pour le panier

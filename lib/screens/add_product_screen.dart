@@ -37,6 +37,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _showImageSourceActionSheet(BuildContext context) {
     showModalBottomSheet(
+      backgroundColor: Colors.white,
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -72,10 +73,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          "Vendre un objet",
-          style: TextStyle(color: Colors.black),
-        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),

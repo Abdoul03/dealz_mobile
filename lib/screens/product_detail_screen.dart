@@ -1,4 +1,6 @@
 import 'package:dealz/_base/constant.dart';
+import 'package:dealz/screens/message_screen.dart';
+import 'package:dealz/screens/vendor_profil_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -179,7 +181,16 @@ class ProductDetailScreen extends StatelessWidget {
                               ),
                             ),
                             OutlinedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => VendorProfilScreen(
+                                      vendorName: "Fatoumata K.",
+                                    ),
+                                  ),
+                                );
+                              },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Constant.primaireColor,
                               ),
@@ -233,7 +244,14 @@ class ProductDetailScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MessageScreen(),
+                          ),
+                        );
+                      },
                       icon: Icon(
                         LucideIcons.message_circle,
                         color: Constant.primaireColor,
@@ -256,7 +274,7 @@ class ProductDetailScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(
-                        "Acheter",
+                        "Ajouter au panier",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
