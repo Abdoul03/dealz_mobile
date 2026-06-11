@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:dealz/_base/constant.dart';
+import 'package:dealz/models/annonce_model.dart';
+import 'package:dealz/models/categorie_model.dart';
 import 'package:dealz/screens/add_product_screen.dart';
 import 'package:dealz/screens/cart_screen.dart';
 import 'package:dealz/screens/message_screen.dart';
 import 'package:dealz/screens/product_card.dart';
 import 'package:dealz/screens/product_detail_screen.dart';
 import 'package:dealz/screens/profil_screen.dart';
+import 'package:dealz/services/annonce_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -16,14 +20,62 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> categories = [
-    "Tout",
-    "Vêtements",
-    "Électronique",
-    "Maison",
-    "Livres",
-  ];
-  int selectedCategoryIndex = 0;
+  final _annonceService = AnnonceService();
+  final _searchCtrl = TextEditingController();
+
+  List<CategorieModel> _categories = [];
+  List<AnnonceModel> _annonces = [];
+  String? _selectedCategorieId;
+  bool _loading = true;
+  String? _error;
+  Timer? _searchTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _init() async {
+    final cats = await _annonceService.getCategories();
+    setState(() => _categories = cats);
+    await _loadAnnonces();
+  }
+
+  Future<void> _loadAnnonces() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final annonces = await _annonceService.getAnnonces(
+        categorieId: _selectedCategorieId,
+        motCle: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+      );
+      setState(() => _annonces = annonces);
+    } catch (e) {
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchTimer?.cancel();
+    _searchTimer = Timer(const Duration(milliseconds: 500), _loadAnnonces);
+  }
+
+  void _selectCategorie(String? categorieId) {
+    setState(() => _selectedCategorieId = categorieId);
+    _loadAnnonces();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,200 +86,217 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        // 1. PROFIL À GAUCHE
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilScreen()),
-              );
-            },
+            onTap: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => ProfilScreen())),
             child: const CircleAvatar(
               backgroundColor: Colors.white24,
               child: Icon(LucideIcons.user, color: Colors.white, size: 20),
             ),
           ),
         ),
-        // 2. MESSAGERIE ET PANIER À DROITE
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.message_circle, color: Colors.white),
-            onPressed: () {
-              // Action vers la messagerie
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => MessageScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => MessageScreen())),
           ),
           Stack(
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(
-                  LucideIcons.shopping_cart,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  // Action vers le panier
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CartScreen()),
-                  );
-                },
-              ),
-              // Badge optionnel pour le panier
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Constant.secondaryColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                icon: const Icon(LucideIcons.shopping_cart, color: Colors.white),
+                onPressed: () => Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => CartScreen())),
               ),
             ],
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 55, // Réduit car le titre est déjà en haut
-            floating: true,
-            pinned: true,
-            backgroundColor: Constant.primaireColor,
-            elevation: 0,
-            automaticallyImplyLeading:
-                false, // Empêche de répéter le bouton leading
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
-              centerTitle: true,
-              title: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Rechercher...",
-                    hintStyle: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
+      body: RefreshIndicator(
+        color: Constant.primaireColor,
+        onRefresh: _loadAnnonces,
+        child: CustomScrollView(
+          slivers: [
+            // Barre de recherche
+            SliverAppBar(
+              expandedHeight: 55,
+              floating: true,
+              pinned: true,
+              backgroundColor: Constant.primaireColor,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                centerTitle: true,
+                title: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher...',
+                      hintStyle:
+                          const TextStyle(fontSize: 13, color: Colors.grey),
+                      prefixIcon: Icon(LucideIcons.search,
+                          size: 20, color: Constant.primaireColor),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(LucideIcons.x,
+                                  size: 16, color: Colors.grey),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _loadAnnonces();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    prefixIcon: Icon(
-                      LucideIcons.search,
-                      size: 20,
-                      color: Constant.primaireColor,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Section Catégories
-          SliverToBoxAdapter(
-            child: Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  bool isSelected = selectedCategoryIndex == index;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: ChoiceChip(
-                      label: Text(categories[index]),
-                      selected: isSelected,
-                      selectedColor: Constant.primaireColor,
-                      backgroundColor: Colors.white,
-                      elevation: 0,
-                      pressElevation: 0,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (selected) {
-                        setState(() => selectedCategoryIndex = index);
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // Grille de Produits
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 15,
-                crossAxisSpacing: 15,
-                childAspectRatio: 0.78,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailScreen(),
-                      ),
-                    );
-                  },
-                  child: const ProductCard(),
+            // Chips catégories
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 56,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  children: [
+                    _categoryChip(null, 'Tout'),
+                    ..._categories.map((c) => _categoryChip(c.id, c.nom)),
+                  ],
                 ),
-                childCount: 10,
               ),
             ),
-          ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 80),
-          ), // Espace pour le FAB
-        ],
-      ),
 
+            // Contenu principal
+            if (_loading)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              SliverFillRemaining(child: _buildError())
+            else if (_annonces.isEmpty)
+              SliverFillRemaining(child: _buildEmpty())
+            else
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                sliver: SliverGrid(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 15,
+                    crossAxisSpacing: 15,
+                    childAspectRatio: 0.78,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final a = _annonces[index];
+                      return GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(annonce: a),
+                          ),
+                        ),
+                        child: ProductCard(
+                          titre: a.titre,
+                          prix: a.prix,
+                          localisation: a.pointRetrait,
+                          imageUrl: a.urlImage,
+                        ),
+                      );
+                    },
+                    childCount: _annonces.length,
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          );
-        },
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AddProductScreen())),
         backgroundColor: Constant.primaireColor,
         icon: const Icon(LucideIcons.plus, color: Colors.white),
-        label: const Text(
-          "Vendre",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        label: const Text('Vendre',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _categoryChip(String? id, String label) {
+    final selected = _selectedCategorieId == id;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        selectedColor: Constant.primaireColor,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        pressElevation: 0,
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.w600,
         ),
+        onSelected: (_) => _selectCategorie(id),
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.wifi_off, size: 56, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(_error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600])),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadAnnonces,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Constant.primaireColor),
+              child: const Text('Réessayer',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(LucideIcons.package, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text('Aucune annonce trouvée.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+        ],
       ),
     );
   }
