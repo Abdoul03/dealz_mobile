@@ -168,8 +168,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (response.statusCode == 201) {
         if (!mounted) return;
-        _showSnack('Annonce créée avec succès !');
-        Navigator.pop(context);
+        _showSnack('Annonce publiée avec succès !');
+        Navigator.pop(context, true);
       } else {
         final err = jsonDecode(response.body) as Map<String, dynamic>;
         setState(() => _errorMessage = err['message'] ?? 'Erreur lors de la création.');

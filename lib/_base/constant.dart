@@ -9,14 +9,15 @@ class Constant {
 
   static const backgroundColor = Color(0xFFF8F9FA);
 
+  // IP du Mac sur le réseau local (obtenue via `ipconfig getifaddr en0`)
+  static const _macIp = "192.168.1.52";
+
   static String get remoteUrl {
     if (Platform.isAndroid) {
-      return "http://10.0.2.2:7070/api/v1";
+      return "http://10.0.2.2:8080/api";
     } else if (Platform.isIOS) {
-      return "http://localhost:8080/api";
-      // return "http://192.168.1.94:7070/api/v1";
+      return "http://$_macIp:8080/api";
     } else {
-      // Pour d'autres plateformes (web, desktop, etc.)
       return "http://localhost:8080/api";
     }
   }

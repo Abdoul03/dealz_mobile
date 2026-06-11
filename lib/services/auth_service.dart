@@ -53,6 +53,32 @@ class AuthService {
     throw Exception(message);
   }
 
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  // Renouvelle l'access token grâce au refresh token.
+  // Retourne true si le renouvellement a réussi, false sinon.
+  Future<bool> refreshTokens() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${Constant.remoteUrl}/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        await _saveTokens(data['accessToken'], data['refreshToken']);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);

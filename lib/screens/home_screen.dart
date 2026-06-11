@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dealz/_base/constant.dart';
+import 'package:dealz/main.dart';
 import 'package:dealz/models/annonce_model.dart';
 import 'package:dealz/models/categorie_model.dart';
 import 'package:dealz/screens/add_product_screen.dart';
@@ -19,7 +20,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _annonceService = AnnonceService();
   final _searchCtrl = TextEditingController();
 
@@ -37,15 +38,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) routeObserver.subscribe(this, route);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _searchCtrl.dispose();
     _searchTimer?.cancel();
     super.dispose();
   }
 
+  // Appelé quand on revient sur HomeScreen depuis une autre page
+  @override
+  void didPopNext() {
+    _loadAnnonces();
+  }
+
   Future<void> _init() async {
-    final cats = await _annonceService.getCategories();
-    setState(() => _categories = cats);
+    try {
+      final cats = await _annonceService.getCategories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {
+      // Catégories non disponibles, on continue sans elles
+    }
     await _loadAnnonces();
   }
 
@@ -231,8 +250,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AddProductScreen())),
+        onPressed: () async {
+          final created = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => const AddProductScreen()),
+          );
+          if (created == true && mounted) _loadAnnonces();
+        },
         backgroundColor: Constant.primaireColor,
         icon: const Icon(LucideIcons.plus, color: Colors.white),
         label: const Text('Vendre',

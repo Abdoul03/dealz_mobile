@@ -70,13 +70,15 @@ class AnnonceService {
   }
 
   Future<List<CategorieModel>> getCategories() async {
-    final response = await ApiClient.get('/categories');
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data
-          .map((e) => CategorieModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
+    try {
+      final response = await ApiClient.get('/categories');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data
+            .map((e) => CategorieModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
     return [];
   }
 }
