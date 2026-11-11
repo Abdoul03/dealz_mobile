@@ -111,7 +111,13 @@ class ApiClient {
   static String parseError(http.Response response) {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['message'] as String? ?? 'Erreur inconnue.';
+      final message = data['message'] as String?;
+      final details = data['details'];
+      if (details is List && details.isNotEmpty) {
+        final detail = details.whereType<String>().where((value) => value.isNotEmpty).join('\n');
+        if (detail.isNotEmpty) return '${message ?? 'Erreur inconnue.'}\n$detail';
+      }
+      return message ?? 'Erreur inconnue.';
     } catch (_) {
       return 'Erreur inconnue (${response.statusCode}).';
     }

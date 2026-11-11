@@ -10,6 +10,8 @@ class ProductCard extends StatelessWidget {
   final double prix;
   final String? localisation;
   final String? imageUrl;
+  final bool isFavorite;
+  final ValueChanged<bool>? onFavoriteChanged;
 
   const ProductCard({
     super.key,
@@ -20,6 +22,8 @@ class ProductCard extends StatelessWidget {
     this.prix = 0,
     this.localisation,
     this.imageUrl,
+    this.isFavorite = false,
+    this.onFavoriteChanged,
   });
 
   @override
@@ -63,6 +67,31 @@ class ProductCard extends StatelessWidget {
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (onFavoriteChanged != null)
+                    Positioned(
+                      top: 5,
+                      right: 5,
+                      child: Material(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        shape: const CircleBorder(),
+                        child: IconButton(
+                          onPressed: () => onFavoriteChanged!(!isFavorite),
+                          tooltip: isFavorite
+                              ? 'Retirer des favoris'
+                              : 'Ajouter aux favoris',
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: isFavorite
+                                ? const Color(0xFFE27B5B)
+                                : const Color(0xFF174E43),
+                            size: 19,
                           ),
                         ),
                       ),

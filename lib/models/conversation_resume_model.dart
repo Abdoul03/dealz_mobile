@@ -4,6 +4,7 @@ class ConversationResumeModel {
   final UserSummaryModel interlocuteur;
   final String annonceId;
   final String annonceTitre;
+  final String? annonceImageUrl;
   final String dernierMessage;
   final DateTime dateEnvoi;
   final bool hasUnread;
@@ -12,6 +13,7 @@ class ConversationResumeModel {
     required this.interlocuteur,
     required this.annonceId,
     required this.annonceTitre,
+    this.annonceImageUrl,
     required this.dernierMessage,
     required this.dateEnvoi,
     required this.hasUnread,
@@ -23,6 +25,7 @@ class ConversationResumeModel {
           json['interlocuteur'] as Map<String, dynamic>),
       annonceId: json['annonceId'] as String,
       annonceTitre: json['annonceTitre'] as String,
+      annonceImageUrl: json['annonceImageUrl'] as String?,
       dernierMessage: json['dernierMessage'] as String,
       dateEnvoi: DateTime.parse(json['dateEnvoi'] as String),
       hasUnread: json['hasUnread'] as bool? ?? false,

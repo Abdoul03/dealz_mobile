@@ -66,7 +66,8 @@ class _VendorProfilScreenState extends State<VendorProfilScreen> {
                 onPressed: _annonces.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => ChatDetailScreen(
                         autreUserId: widget.vendorId, autreUserNom: widget.vendorName,
-                        annonceId: _annonces.first.id, annonceTitre: _annonces.first.titre))),
+                        annonceId: _annonces.first.id, annonceTitre: _annonces.first.titre,
+                        annonceImageUrl: _annonces.first.urlImage))),
                 icon: const Icon(LucideIcons.message_square, size: 18),
                 label: const Text('Contacter le vendeur', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(foregroundColor: Constant.primaireColor,

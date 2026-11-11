@@ -9,14 +9,17 @@ class Constant {
 
   static const backgroundColor = Color(0xFFF7F5EF);
 
-  // IP du Mac sur le réseau local (obtenue via `ipconfig getifaddr en0`)
-  static const _macIp = "192.168.1.52";
+  // Peut être remplacée pour un appareil physique avec --dart-define=API_BASE_URL=...
+  static const _configuredApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static String get remoteUrl {
+    if (_configuredApiBaseUrl.isNotEmpty) return _configuredApiBaseUrl;
+
     if (Platform.isAndroid) {
       return "http://10.0.2.2:8080/api";
     } else if (Platform.isIOS) {
-      return "http://$_macIp:8080/api";
+      // Le simulateur iOS partage le réseau de l'hôte Mac.
+      return "http://127.0.0.1:8080/api";
     } else {
       return "http://localhost:8080/api";
     }

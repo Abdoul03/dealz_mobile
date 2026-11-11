@@ -1,5 +1,5 @@
-import 'package:dealz/screens/home_screen.dart';
 import 'package:dealz/screens/login_screen.dart';
+import 'package:dealz/screens/main_navigation_screen.dart';
 import 'package:dealz/screens/onboarding_screen.dart';
 import 'package:dealz/services/auth_service.dart';
 import 'package:dealz/services/navigation_service.dart';
@@ -51,7 +51,7 @@ class _SplashRouterState extends State<_SplashRouter> {
     if (!mounted) return;
 
     if (isLogged) {
-      _go(const HomeScreen());
+      _go(const MainNavigationScreen());
       return;
     }
 

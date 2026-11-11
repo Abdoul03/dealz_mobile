@@ -3,13 +3,11 @@ import 'package:dealz/_base/constant.dart';
 import 'package:dealz/main.dart';
 import 'package:dealz/models/annonce_model.dart';
 import 'package:dealz/models/categorie_model.dart';
-import 'package:dealz/screens/add_product_screen.dart';
 import 'package:dealz/screens/cart_screen.dart';
-import 'package:dealz/screens/message_screen.dart';
 import 'package:dealz/screens/product_card.dart';
 import 'package:dealz/screens/product_detail_screen.dart';
-import 'package:dealz/screens/profil_screen.dart';
 import 'package:dealz/services/annonce_service.dart';
+import 'package:dealz/services/favori_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -17,11 +15,12 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with RouteAware {
+class HomeScreenState extends State<HomeScreen> with RouteAware {
   final _annonceService = AnnonceService();
+  final _favoriService = FavoriService();
   final _searchCtrl = TextEditingController();
   final _sizeFilterCtrl = TextEditingController();
   final _minimumPriceCtrl = TextEditingController();
@@ -30,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   List<CategorieModel> _categories = [];
   List<AnnonceModel> _annonces = [];
+  Set<String> _favoriIds = {};
   String? _selectedCategorieId;
   bool _loading = true;
   bool _loadingMore = false;
@@ -69,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   @override
   void didPopNext() {
     _loadAnnonces();
+    _loadFavoriIds();
   }
 
   Future<void> _init() async {
@@ -78,7 +79,55 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     } catch (_) {
       // Catégories non disponibles, on continue sans elles
     }
-    await _loadAnnonces();
+    await Future.wait([_loadAnnonces(), _loadFavoriIds()]);
+  }
+
+  Future<void> _loadFavoriIds() async {
+    try {
+      final ids = await _favoriService.getMesFavorisIds();
+      if (mounted) setState(() => _favoriIds = ids);
+    } catch (_) {
+      // Les articles restent consultables si les favoris ne sont pas disponibles.
+    }
+  }
+
+  void refreshFavorites() => _loadFavoriIds();
+
+  void refreshAfterListingAdded() {
+    _loadAnnonces();
+    _loadFavoriIds();
+  }
+
+  Future<void> _toggleFavori(String annonceId, bool ajouter) async {
+    setState(() {
+      if (ajouter) {
+        _favoriIds.add(annonceId);
+      } else {
+        _favoriIds.remove(annonceId);
+      }
+    });
+    try {
+      if (ajouter) {
+        await _favoriService.ajouter(annonceId);
+      } else {
+        await _favoriService.retirer(annonceId);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (ajouter) {
+          _favoriIds.remove(annonceId);
+        } else {
+          _favoriIds.add(annonceId);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _loadAnnonces() async {
@@ -255,32 +304,30 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: GestureDetector(
-            onTap: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => ProfilScreen())),
-            child: const CircleAvatar(
-              backgroundColor: Constant.tertiaoreColor,
-              child: Icon(LucideIcons.user, color: Constant.primaireColor, size: 20),
+        title: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: Image.asset(
+                'assets/icons/icon.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-        ),
-        title: Text(
-          'dealz',
-          style: TextStyle(
-            color: Constant.primaireColor,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.7,
-            fontSize: 23,
-          ),
+            const SizedBox(width: 8),
+            Text(
+              'dealz',
+              style: TextStyle(
+                color: Constant.primaireColor,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.7,
+                fontSize: 23,
+              ),
+            ),
+          ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(LucideIcons.message_circle, color: Constant.primaireColor),
-            onPressed: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => MessageScreen())),
-          ),
           Stack(
             alignment: Alignment.center,
             children: [
@@ -481,6 +528,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                           prix: a.prix,
                           localisation: a.quartier,
                           imageUrl: a.urlImage,
+                          isFavorite: _favoriIds.contains(a.id),
+                          onFavoriteChanged: (ajouter) =>
+                              _toggleFavori(a.id, ajouter),
                         ),
                       );
                     },
@@ -498,19 +548,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final created = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(builder: (_) => const AddProductScreen()),
-          );
-          if (created == true && mounted) _loadAnnonces();
-        },
-        backgroundColor: Constant.primaireColor,
-        icon: const Icon(LucideIcons.plus, color: Colors.white),
-        label: const Text('Vendre',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:dealz/models/annonce_model.dart';
 import 'package:dealz/screens/chat_detail_screen.dart';
 import 'package:dealz/screens/vendor_profil_screen.dart';
 import 'package:dealz/services/auth_service.dart';
+import 'package:dealz/services/favori_service.dart';
 import 'package:dealz/services/transaction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -19,7 +20,55 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _buying = false;
   bool _reserved = false;
+  bool _isFavorite = false;
+  bool _favoriteLoading = false;
   int _photoIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    try {
+      final ids = await FavoriService().getMesFavorisIds();
+      if (mounted) setState(() => _isFavorite = ids.contains(widget.annonce.id));
+    } catch (_) {
+      // L'article reste consultable si le chargement des favoris échoue.
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_favoriteLoading) return;
+    setState(() => _favoriteLoading = true);
+    try {
+      if (_isFavorite) {
+        await FavoriService().retirer(widget.annonce.id);
+      } else {
+        await FavoriService().ajouter(widget.annonce.id);
+      }
+      if (!mounted) return;
+      setState(() => _isFavorite = !_isFavorite);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isFavorite
+              ? 'Article ajouté aux favoris.'
+              : 'Article retiré des favoris.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _favoriteLoading = false);
+    }
+  }
 
   Future<void> _acheter() async {
     final currentUserId = await AuthService().getCurrentUserId();
@@ -90,6 +139,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           autreUserNom: widget.annonce.vendeur.nomComplet,
           annonceId: widget.annonce.id,
           annonceTitre: widget.annonce.titre,
+          annonceImageUrl: widget.annonce.urlImage,
         ),
       ),
     );
@@ -360,6 +410,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: IconButton(
                 icon: const Icon(LucideIcons.arrow_left, color: Colors.black),
                 onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 48,
+            right: 16,
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: IconButton(
+                tooltip: _isFavorite
+                    ? 'Retirer des favoris'
+                    : 'Ajouter aux favoris',
+                onPressed: _favoriteLoading ? null : _toggleFavorite,
+                icon: _favoriteLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: _isFavorite
+                            ? Constant.secondaryColor
+                            : Constant.primaireColor,
+                      ),
               ),
             ),
           ),

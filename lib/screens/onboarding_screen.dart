@@ -17,7 +17,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<_OnboardingData> _pages = [
     _OnboardingData(
-      icon: LucideIcons.shopping_bag,
+      icon: LucideIcons.shirt,
       gradient: [Color(0xFF174E43), Color(0xFF477A68)],
       title: 'La seconde main\nà Bamako',
       subtitle:

@@ -1,5 +1,5 @@
 import 'package:dealz/_base/constant.dart';
-import 'package:dealz/screens/home_screen.dart';
+import 'package:dealz/screens/main_navigation_screen.dart';
 import 'package:dealz/screens/register_screen.dart';
 import 'package:dealz/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         (_) => false,
       );
     } catch (e) {
@@ -67,17 +67,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Constant.primaireColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        LucideIcons.shopping_bag,
-                        color: Colors.white,
-                        size: 36,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/icons/icon.png',
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(height: 14),

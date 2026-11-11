@@ -10,9 +10,10 @@ class ChatDetailScreen extends StatefulWidget {
   final String autreUserNom;
   final String annonceId;
   final String annonceTitre;
+  final String? annonceImageUrl;
 
   const ChatDetailScreen({super.key, required this.autreUserId, required this.autreUserNom,
-      required this.annonceId, required this.annonceTitre});
+      required this.annonceId, required this.annonceTitre, this.annonceImageUrl});
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -89,6 +90,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         actions: [IconButton(icon: const Icon(LucideIcons.refresh_cw, color: Colors.black54, size: 18), onPressed: _loadMessages)],
       ),
       body: Column(children: [
+        _buildArticleContext(),
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator())
             : _messages.isEmpty ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(LucideIcons.message_circle, size: 56, color: Colors.grey[300]),
@@ -118,6 +120,54 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(LucideIcons.send, color: Colors.white, size: 18))),
             ]))),
+      ]),
+    );
+  }
+
+  Widget _buildArticleContext() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Constant.tertiaoreColor),
+      ),
+      child: Row(children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(9),
+          child: SizedBox(
+            width: 54,
+            height: 54,
+            child: widget.annonceImageUrl == null || widget.annonceImageUrl!.isEmpty
+                ? Container(
+                    color: Constant.tertiaoreColor,
+                    child: Icon(LucideIcons.shirt, color: Constant.primaireColor),
+                  )
+                : Image.network(
+                    widget.annonceImageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Constant.tertiaoreColor,
+                      child: Icon(LucideIcons.shirt, color: Constant.primaireColor),
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('DISCUSSION À PROPOS DE',
+                style: TextStyle(color: Colors.grey[600], fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: .5)),
+            const SizedBox(height: 3),
+            Text(widget.annonceTitre,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Constant.primaireColor, fontSize: 14, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+        Icon(LucideIcons.tag, size: 18, color: Constant.secondaryColor),
       ]),
     );
   }

@@ -8,6 +8,7 @@ class TransactionModel {
   final String? modeRetrait;
   final String annonceId;
   final String annonceTitre;
+  final String? annonceImageUrl;
   final UserSummaryModel acheteur;
   final UserSummaryModel vendeur;
   final bool acheteurConfirmeRemise;
@@ -21,6 +22,7 @@ class TransactionModel {
     this.modeRetrait,
     required this.annonceId,
     required this.annonceTitre,
+    this.annonceImageUrl,
     required this.acheteur,
     required this.vendeur,
     required this.acheteurConfirmeRemise,
@@ -38,6 +40,7 @@ class TransactionModel {
       modeRetrait: json['modeRetrait'] as String?,
       annonceId: json['annonceId'] as String,
       annonceTitre: json['annonceTitre'] as String,
+      annonceImageUrl: json['annonceImageUrl'] as String?,
       acheteur: UserSummaryModel.fromJson(
           json['acheteur'] as Map<String, dynamic>),
       vendeur: UserSummaryModel.fromJson(

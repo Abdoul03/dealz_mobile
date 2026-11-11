@@ -124,7 +124,7 @@ class _CartScreenState extends State<CartScreen> {
       await _service.annulerTransaction(transaction.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Réservation annulée.')),
+        const SnackBar(content: Text('Réservation annulée. L’article est de nouveau en ligne.')),
       );
       await _load();
     } catch (error) {
@@ -279,6 +279,7 @@ class _CartScreenState extends State<CartScreen> {
                           autreUserNom: interlocuteur,
                           annonceId: transaction.annonceId,
                           annonceTitre: transaction.annonceTitre,
+                          annonceImageUrl: transaction.annonceImageUrl,
                         ),
                       ),
                     ),

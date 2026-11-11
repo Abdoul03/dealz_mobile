@@ -58,11 +58,11 @@ class _MessageScreenState extends State<MessageScreen> {
         onTap: () async {
           await Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(
             autreUserId: conv.interlocuteur.id, autreUserNom: conv.interlocuteur.nomComplet,
-            annonceId: conv.annonceId, annonceTitre: conv.annonceTitre)));
+          annonceId: conv.annonceId, annonceTitre: conv.annonceTitre,
+          annonceImageUrl: conv.annonceImageUrl)));
           _load();
         },
-        leading: CircleAvatar(radius: 26, backgroundColor: Constant.primaireColor.withValues(alpha: 0.1),
-            child: Icon(LucideIcons.user, color: Constant.primaireColor, size: 22)),
+        leading: _articleThumbnail(imageUrl: conv.annonceImageUrl, size: 56),
         title: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(child: Text(conv.interlocuteur.nomComplet,
               style: TextStyle(fontWeight: conv.hasUnread ? FontWeight.bold : FontWeight.w600, fontSize: 15),
@@ -80,6 +80,29 @@ class _MessageScreenState extends State<MessageScreen> {
         trailing: conv.hasUnread
             ? Container(width: 10, height: 10, decoration: BoxDecoration(color: Constant.primaireColor, shape: BoxShape.circle))
             : const Icon(LucideIcons.chevron_right, size: 16, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _articleThumbnail({required String? imageUrl, required double size}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl == null || imageUrl.isEmpty
+            ? Container(
+                color: Constant.tertiaoreColor,
+                child: Icon(LucideIcons.shirt, color: Constant.primaireColor),
+              )
+            : Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Constant.tertiaoreColor,
+                  child: Icon(LucideIcons.shirt, color: Constant.primaireColor),
+                ),
+              ),
       ),
     );
   }
