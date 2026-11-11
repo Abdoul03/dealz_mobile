@@ -37,8 +37,23 @@ class ApiClient {
         ));
   }
 
+  static Future<http.Response> put(String path, Map<String, dynamic> body) {
+    return _execute((h) => http.put(
+          Uri.parse('${Constant.remoteUrl}$path'),
+          headers: h,
+          body: jsonEncode(body),
+        ));
+  }
+
   static Future<http.Response> patch(String path) {
     return _execute((h) => http.patch(
+          Uri.parse('${Constant.remoteUrl}$path'),
+          headers: h,
+        ));
+  }
+
+  static Future<http.Response> delete(String path) {
+    return _execute((h) => http.delete(
           Uri.parse('${Constant.remoteUrl}$path'),
           headers: h,
         ));

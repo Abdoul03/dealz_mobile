@@ -18,24 +18,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<_OnboardingData> _pages = [
     _OnboardingData(
       icon: LucideIcons.shopping_bag,
-      gradient: [Color(0xFF355872), Color(0xFF4A7EA8)],
-      title: 'Achetez & Vendez\nFacilement',
+      gradient: [Color(0xFF174E43), Color(0xFF477A68)],
+      title: 'La seconde main\nà Bamako',
       subtitle:
-          'Des milliers d\'articles près de chez vous. Donnez une seconde vie à vos objets et faites de bonnes affaires.',
+          'Vêtements et accessoires d’occasion à découvrir à Bamako.',
     ),
     _OnboardingData(
       icon: LucideIcons.shield_check,
-      gradient: [Color(0xFF2E6B6B), Color(0xFF4A9E9E)],
-      title: 'Transactions\nSécurisées',
+      gradient: [Color(0xFFB75C42), Color(0xFFE28B68)],
+      title: 'Un rendez-vous,\nune remise en main propre',
       subtitle:
-          'Vendeurs vérifiés, avis authentiques et paiements protégés. Achetez et vendez en toute confiance.',
+          'Discutez dans Dealz et convenez d’un rendez-vous. Le paiement se fait directement entre vous, hors de l’application.',
     ),
     _OnboardingData(
       icon: LucideIcons.tag,
-      gradient: [Color(0xFF4A4A8A), Color(0xFF7070BB)],
-      title: 'Les Meilleures\nOffres',
+      gradient: [Color(0xFF353F39), Color(0xFF68766A)],
+      title: 'Le style mérite\nune seconde vie',
       subtitle:
-          'Recevez des alertes sur les articles qui vous intéressent et ne ratez plus aucune bonne affaire.',
+          'Trouvez votre prochaine pièce préférée ou publiez celles que vous ne portez plus.',
     ),
   ];
 

@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dealz/_base/constant.dart';
+import 'package:dealz/models/annonce_model.dart';
 import 'package:dealz/services/auth_service.dart';
+import 'package:dealz/services/api_client.dart';
 import 'package:dealz/services/media_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -9,7 +12,9 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({super.key});
+  final AnnonceModel? annonce;
+
+  const AddProductScreen({super.key, this.annonce});
 
   @override
   State<AddProductScreen> createState() => _AddProductScreenState();
@@ -20,11 +25,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _picker = ImagePicker();
 
   final _titreCtrl = TextEditingController();
+  final _marqueCtrl = TextEditingController();
+  final _tailleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _prixCtrl = TextEditingController();
-  final _pointRetraitCtrl = TextEditingController();
+  final _quartierCtrl = TextEditingController();
 
   final List<File> _images = [];
+  final List<String> _existingImageUrls = [];
   static const int _maxImages = 5;
 
   String? _selectedCategorieId;
@@ -45,15 +53,39 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   void initState() {
     super.initState();
+    _populateFromAnnonce();
     _loadCategories();
   }
+
+  void _populateFromAnnonce() {
+    final annonce = widget.annonce;
+    if (annonce == null) return;
+
+    _titreCtrl.text = annonce.titre;
+    _marqueCtrl.text = annonce.marque ?? '';
+    _tailleCtrl.text = annonce.taille ?? '';
+    _descCtrl.text = annonce.description;
+    _prixCtrl.text = annonce.prix.toStringAsFixed(0);
+    _quartierCtrl.text = annonce.quartier ?? '';
+    _selectedCategorieId = annonce.categorie.id;
+    _selectedEtat = annonce.etat;
+    _existingImageUrls.addAll({
+      if (annonce.urlImage != null && annonce.urlImage!.isNotEmpty)
+        annonce.urlImage!,
+      ...annonce.urlImages.where((url) => url.isNotEmpty),
+    });
+  }
+
+  int get _imageCount => _existingImageUrls.length + _images.length;
 
   @override
   void dispose() {
     _titreCtrl.dispose();
+    _marqueCtrl.dispose();
+    _tailleCtrl.dispose();
     _descCtrl.dispose();
     _prixCtrl.dispose();
-    _pointRetraitCtrl.dispose();
+    _quartierCtrl.dispose();
     super.dispose();
   }
 
@@ -66,22 +98,29 @@ class _AddProductScreenState extends State<AddProductScreen> {
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        if (!mounted) return;
         setState(() {
           _categories = data.map((e) => {'id': e['id'], 'nom': e['nom']}).toList().cast<Map<String, dynamic>>();
-          _loadingCategories = false;
         });
       }
     } catch (_) {
-      setState(() => _loadingCategories = false);
+      // La liste reste vide et le formulaire affiche son état vide.
+    } finally {
+      if (mounted) setState(() => _loadingCategories = false);
     }
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    if (_images.length >= _maxImages) {
+    if (_imageCount >= _maxImages) {
       _showSnack('Maximum $_maxImages photos autorisées.');
       return;
     }
-    final picked = await _picker.pickImage(source: source, imageQuality: 80);
+    final picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 75,
+      maxWidth: 1400,
+      maxHeight: 1400,
+    );
     if (picked != null) {
       setState(() => _images.add(File(picked.path)));
     }
@@ -89,6 +128,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _removeImage(int index) {
     setState(() => _images.removeAt(index));
+  }
+
+  void _removeExistingImage(int index) {
+    setState(() => _existingImageUrls.removeAt(index));
   }
 
   void _showPickerSheet() {
@@ -122,7 +165,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_images.isEmpty) {
+    if (_imageCount == 0) {
       _showSnack('Ajoutez au moins une photo.');
       return;
     }
@@ -141,41 +184,45 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
 
     try {
-      // 1. Upload des images
-      final imageUrls = await MediaService().uploadImages(_images);
+      final uploadedUrls = await MediaService().uploadImages(_images);
+      final imageUrls = [..._existingImageUrls, ...uploadedUrls];
 
-      // 2. Création de l'annonce
-      final token = await AuthService().getAccessToken();
-      final body = jsonEncode({
+      final body = <String, dynamic>{
         'titre': _titreCtrl.text.trim(),
+        'marque': _marqueCtrl.text.trim().isEmpty
+            ? null
+            : _marqueCtrl.text.trim(),
+        'taille': _tailleCtrl.text.trim().isEmpty
+            ? null
+            : _tailleCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'prix': double.parse(_prixCtrl.text.trim()),
         'urlImage': imageUrls.first,
         'urlImages': imageUrls,
         'etat': _selectedEtat,
         'categorieId': _selectedCategorieId,
-        'pointRetrait': _pointRetraitCtrl.text.trim(),
-      });
+        'quartier': _quartierCtrl.text.trim().isEmpty
+            ? null
+            : _quartierCtrl.text.trim(),
+      };
+      final isEditing = widget.annonce != null;
+      final response = isEditing
+          ? await ApiClient.put('/annonces/${widget.annonce!.id}', body)
+          : await ApiClient.post('/annonces', body);
 
-      final response = await http.post(
-        Uri.parse('${Constant.remoteUrl}/annonces'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-        body: body,
-      );
-
-      if (response.statusCode == 201) {
+      if (response.statusCode == (isEditing ? 200 : 201)) {
         if (!mounted) return;
-        _showSnack('Annonce publiée avec succès !');
+        _showSnack(isEditing
+            ? 'Annonce mise à jour.'
+            : 'Annonce publiée avec succès !');
         Navigator.pop(context, true);
       } else {
-        final err = jsonDecode(response.body) as Map<String, dynamic>;
-        setState(() => _errorMessage = err['message'] ?? 'Erreur lors de la création.');
+        setState(() => _errorMessage = ApiClient.parseError(response));
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -198,8 +245,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
         backgroundColor: Constant.backgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Vendre un article',
+        title: Text(
+          widget.annonce == null ? 'Vendre un article' : 'Modifier l’annonce',
           style: TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.bold,
@@ -215,21 +262,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── PHOTOS ──────────────────────────────────────────────
-              _sectionTitle('Photos (${_images.length}/$_maxImages)'),
+              _sectionTitle('Photos ($_imageCount/$_maxImages)'),
               const SizedBox(height: 10),
               SizedBox(
                 height: 110,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
+                    ..._existingImageUrls.asMap().entries.map(
+                          (entry) => _existingImageThumbnail(
+                            entry.value,
+                            entry.key,
+                            isCover: entry.key == 0,
+                          ),
+                        ),
                     // Miniatures des images sélectionnées
                     ..._images.asMap().entries.map((entry) => _imageThumbnail(
                           entry.value,
                           entry.key,
-                          isCover: entry.key == 0,
+                          isCover: _existingImageUrls.isEmpty && entry.key == 0,
                         )),
                     // Bouton "Ajouter"
-                    if (_images.length < _maxImages)
+                    if (_imageCount < _maxImages)
                       GestureDetector(
                         onTap: _showPickerSheet,
                         child: Container(
@@ -279,6 +333,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 maxLines: 4,
                 validator: (v) =>
                     v!.trim().isEmpty ? 'La description est requise.' : null,
+              ),
+              _buildFormField(
+                controller: _marqueCtrl,
+                label: 'Marque (facultatif)',
+                hint: 'Ex: Zara, Nike, sans marque',
+              ),
+              _buildFormField(
+                controller: _tailleCtrl,
+                label: 'Taille (facultatif)',
+                hint: 'Ex: M, 38, taille unique',
               ),
               _buildFormField(
                 controller: _prixCtrl,
@@ -337,12 +401,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
 
               // ── LOCALISATION ─────────────────────────────────────────
-              _sectionTitle('Point de retrait'),
+              _sectionTitle('Quartier'),
               const SizedBox(height: 10),
               _buildFormField(
-                controller: _pointRetraitCtrl,
-                label: 'Adresse / Quartier',
-                hint: 'Ex: Hamdallaye ACI 2000, Bamako',
+                controller: _quartierCtrl,
+                label: 'Quartier (facultatif)',
+                hint: 'Ex: Hamdallaye, Sogoniko',
                 icon: LucideIcons.map_pin,
               ),
 
@@ -385,7 +449,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           height: 22,
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5, color: Colors.white))
-                      : const Text("Publier l'annonce",
+                      : Text(
+                          widget.annonce == null
+                              ? "Publier l'annonce"
+                              : 'Enregistrer les modifications',
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
@@ -443,6 +510,69 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   color: Colors.black54, shape: BoxShape.circle),
               child: const Icon(LucideIcons.x,
                   size: 12, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _existingImageThumbnail(
+    String url,
+    int index, {
+    bool isCover = false,
+  }) {
+    return Stack(
+      children: [
+        Container(
+          width: 90,
+          height: 90,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: isCover
+                ? Border.all(color: Constant.primaireColor, width: 2.5)
+                : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => const Icon(LucideIcons.image_off),
+          ),
+        ),
+        if (isCover)
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: Constant.primaireColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Couverture',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          top: 2,
+          right: 10,
+          child: GestureDetector(
+            onTap: () => _removeExistingImage(index),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.x, size: 12, color: Colors.white),
             ),
           ),
         ),

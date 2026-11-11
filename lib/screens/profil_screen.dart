@@ -5,6 +5,8 @@ import 'package:dealz/services/annonce_service.dart';
 import 'package:dealz/services/api_client.dart';
 import 'package:dealz/services/auth_service.dart';
 import 'package:dealz/services/transaction_service.dart';
+import 'package:dealz/screens/my_listings_screen.dart';
+import 'package:dealz/screens/cart_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -73,12 +75,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
         surfaceTintColor: Colors.transparent,
         backgroundColor: Constant.backgroundColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.settings, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -190,27 +186,26 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           _buildMenuTile(
                               icon: LucideIcons.package,
                               title: 'Mes objets en vente',
-                              subtitle: 'Gérer ou modifier vos annonces',
-                              onTap: () {}),
+                              subtitle: 'Gérer vos annonces et leur visibilité',
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const MyListingsScreen(),
+                                ),
+                              )),
                           _buildDivider(),
                           _buildMenuTile(
                               icon: LucideIcons.history,
                               title: 'Historique des transactions',
-                              subtitle: 'Achats et ventes terminés',
-                              onTap: () {}),
-                          _buildDivider(),
-                          _buildMenuTile(
-                              icon: LucideIcons.heart,
-                              title: 'Mes favoris',
-                              subtitle: 'Articles sauvegardés',
-                              onTap: () {}),
-                          _buildDivider(),
-                          _buildMenuTile(
-                              icon: LucideIcons.store,
-                              title: 'Devenir Commerçant Pro',
-                              subtitle: 'Boutique dédiée à 5 000 FCFA / mois',
-                              iconColor: Constant.secondaryColor,
-                              onTap: () {}),
+                              subtitle: 'Retrouver vos achats et ventes',
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CartScreen(
+                                    initialTab: 1,
+                                  ),
+                                ),
+                              )),
                         ],
                       ),
                     ),

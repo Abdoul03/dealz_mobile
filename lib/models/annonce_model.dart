@@ -4,6 +4,8 @@ import 'package:dealz/models/user_summary_model.dart';
 class AnnonceModel {
   final String id;
   final String titre;
+  final String? marque;
+  final String? taille;
   final String description;
   final double prix;
   final String? urlImage;
@@ -12,13 +14,15 @@ class AnnonceModel {
   final String statut;
   final DateTime? datePublication;
   final bool isBoosted;
-  final String? pointRetrait;
+  final String? quartier;
   final UserSummaryModel vendeur;
   final CategorieModel categorie;
 
   AnnonceModel({
     required this.id,
     required this.titre,
+    this.marque,
+    this.taille,
     required this.description,
     required this.prix,
     this.urlImage,
@@ -27,7 +31,7 @@ class AnnonceModel {
     required this.statut,
     this.datePublication,
     required this.isBoosted,
-    this.pointRetrait,
+    this.quartier,
     required this.vendeur,
     required this.categorie,
   });
@@ -36,6 +40,8 @@ class AnnonceModel {
     return AnnonceModel(
       id: json['id'] as String,
       titre: json['titre'] as String,
+      marque: json['marque'] as String?,
+      taille: json['taille'] as String?,
       description: json['description'] as String,
       prix: (json['prix'] as num).toDouble(),
       urlImage: json['urlImage'] as String?,
@@ -46,7 +52,7 @@ class AnnonceModel {
           ? DateTime.tryParse(json['datePublication'] as String)
           : null,
       isBoosted: json['isBoosted'] as bool? ?? false,
-      pointRetrait: json['pointRetrait'] as String?,
+      quartier: json['quartier'] as String?,
       vendeur: UserSummaryModel.fromJson(
           json['vendeur'] as Map<String, dynamic>),
       categorie: CategorieModel.fromJson(

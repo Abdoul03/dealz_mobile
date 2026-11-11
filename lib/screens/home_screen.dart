@@ -23,17 +23,26 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _annonceService = AnnonceService();
   final _searchCtrl = TextEditingController();
+  final _sizeFilterCtrl = TextEditingController();
+  final _minimumPriceCtrl = TextEditingController();
+  final _maximumPriceCtrl = TextEditingController();
+  final _scrollController = ScrollController();
 
   List<CategorieModel> _categories = [];
   List<AnnonceModel> _annonces = [];
   String? _selectedCategorieId;
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _page = 0;
+  int _requestSequence = 0;
   String? _error;
   Timer? _searchTimer;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _init();
   }
 
@@ -48,6 +57,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void dispose() {
     routeObserver.unsubscribe(this);
     _searchCtrl.dispose();
+    _sizeFilterCtrl.dispose();
+    _minimumPriceCtrl.dispose();
+    _maximumPriceCtrl.dispose();
+    _scrollController.dispose();
     _searchTimer?.cancel();
     super.dispose();
   }
@@ -69,20 +82,73 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   Future<void> _loadAnnonces() async {
+    final sequence = ++_requestSequence;
     setState(() {
       _loading = true;
+      _loadingMore = false;
+      _hasMore = true;
+      _page = 0;
       _error = null;
     });
     try {
       final annonces = await _annonceService.getAnnonces(
         categorieId: _selectedCategorieId,
         motCle: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+        taille: _sizeFilterCtrl.text.trim().isEmpty
+            ? null
+            : _sizeFilterCtrl.text.trim(),
+        prixMin: double.tryParse(_minimumPriceCtrl.text.trim()),
+        prixMax: double.tryParse(_maximumPriceCtrl.text.trim()),
       );
-      setState(() => _annonces = annonces);
+      if (!mounted || sequence != _requestSequence) return;
+      setState(() {
+        _annonces = annonces;
+        _hasMore = annonces.length == 20;
+      });
     } catch (e) {
+      if (!mounted || sequence != _requestSequence) return;
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      setState(() => _loading = false);
+      if (mounted && sequence == _requestSequence) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.extentAfter < 500) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loading || _loadingMore || !_hasMore) return;
+    final sequence = _requestSequence;
+    final nextPage = _page + 1;
+    setState(() => _loadingMore = true);
+    try {
+      final annonces = await _annonceService.getAnnonces(
+        categorieId: _selectedCategorieId,
+        motCle: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+        taille: _sizeFilterCtrl.text.trim().isEmpty
+            ? null
+            : _sizeFilterCtrl.text.trim(),
+        prixMin: double.tryParse(_minimumPriceCtrl.text.trim()),
+        prixMax: double.tryParse(_maximumPriceCtrl.text.trim()),
+        page: nextPage,
+      );
+      if (!mounted || sequence != _requestSequence) return;
+      setState(() {
+        _annonces = [..._annonces, ...annonces];
+        _page = nextPage;
+        _hasMore = annonces.length == 20;
+      });
+    } catch (_) {
+      // La première page reste consultable si le réseau coupe pendant le chargement.
+    } finally {
+      if (mounted && sequence == _requestSequence) {
+        setState(() => _loadingMore = false);
+      }
     }
   }
 
@@ -96,29 +162,122 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     _loadAnnonces();
   }
 
+  Future<void> _showFilters() async {
+    final applied = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          24,
+          20,
+          MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Affiner la recherche',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 18),
+            TextField(
+              controller: _sizeFilterCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Taille',
+                hintText: 'Ex. M, 38 ou taille unique',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minimumPriceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Prix minimum',
+                      suffixText: 'FCFA',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _maximumPriceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Prix maximum',
+                      suffixText: 'FCFA',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _sizeFilterCtrl.clear();
+                    _minimumPriceCtrl.clear();
+                    _maximumPriceCtrl.clear();
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text('Effacer'),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Voir les articles'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (applied == true) await _loadAnnonces();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Constant.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Constant.primaireColor,
+        backgroundColor: Constant.backgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        centerTitle: true,
+        centerTitle: false,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: GestureDetector(
             onTap: () => Navigator.push(
                 context, MaterialPageRoute(builder: (_) => ProfilScreen())),
             child: const CircleAvatar(
-              backgroundColor: Colors.white24,
-              child: Icon(LucideIcons.user, color: Colors.white, size: 20),
+              backgroundColor: Constant.tertiaoreColor,
+              child: Icon(LucideIcons.user, color: Constant.primaireColor, size: 20),
             ),
+          ),
+        ),
+        title: Text(
+          'dealz',
+          style: TextStyle(
+            color: Constant.primaireColor,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.7,
+            fontSize: 23,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(LucideIcons.message_circle, color: Colors.white),
+            icon: Icon(LucideIcons.message_circle, color: Constant.primaireColor),
             onPressed: () => Navigator.push(
                 context, MaterialPageRoute(builder: (_) => MessageScreen())),
           ),
@@ -126,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(LucideIcons.shopping_cart, color: Colors.white),
+                icon: Icon(LucideIcons.shopping_bag, color: Constant.primaireColor),
                 onPressed: () => Navigator.push(
                     context, MaterialPageRoute(builder: (_) => CartScreen())),
               ),
@@ -139,13 +298,54 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         color: Constant.primaireColor,
         onRefresh: _loadAnnonces,
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(LucideIcons.map_pin, size: 14, color: Constant.primaireColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          'BAMAKO, MALI',
+                          style: TextStyle(
+                            color: Constant.primaireColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 9),
+                    const Text(
+                      'La mode continue\nsa vie ici.',
+                      style: TextStyle(
+                        fontSize: 30,
+                        height: 1.08,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'De belles pièces de seconde main à découvrir dans la ville.',
+                      style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             // Barre de recherche
             SliverAppBar(
               expandedHeight: 55,
               floating: true,
               pinned: true,
-              backgroundColor: Constant.primaireColor,
+              backgroundColor: Constant.backgroundColor,
               elevation: 0,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
@@ -197,6 +397,46 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   children: [
                     _categoryChip(null, 'Tout'),
                     ..._categories.map((c) => _categoryChip(c.id, c.nom)),
+                    ActionChip(
+                      avatar: Icon(
+                        LucideIcons.sliders_horizontal,
+                        size: 15,
+                        color: Constant.primaireColor,
+                      ),
+                      label: Text(
+                        _sizeFilterCtrl.text.isNotEmpty ||
+                                _minimumPriceCtrl.text.isNotEmpty ||
+                                _maximumPriceCtrl.text.isNotEmpty
+                            ? 'Filtres actifs'
+                            : 'Filtres',
+                      ),
+                      onPressed: _showFilters,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'À dénicher',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    if (!_loading && _annonces.isNotEmpty)
+                      Text(
+                        '${_annonces.length}${_hasMore ? '+' : ''} articles',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
                   ],
                 ),
               ),
@@ -235,14 +475,24 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         ),
                         child: ProductCard(
                           titre: a.titre,
+                          marque: a.marque,
+                          taille: a.taille,
+                          etat: a.etatLabel,
                           prix: a.prix,
-                          localisation: a.pointRetrait,
+                          localisation: a.quartier,
                           imageUrl: a.urlImage,
                         ),
                       );
                     },
                     childCount: _annonces.length,
                   ),
+                ),
+              ),
+            if (_loadingMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 80)),

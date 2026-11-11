@@ -5,16 +5,10 @@ import 'package:dealz/services/api_client.dart';
 class TransactionService {
   Future<TransactionModel> initierTransaction({
     required String annonceId,
-    required String typePaiement,
-    String? modeRetrait,
   }) async {
-    final body = <String, dynamic>{
+    final response = await ApiClient.post('/transactions', {
       'annonceId': annonceId,
-      'typePaiement': typePaiement,
-    };
-    if (modeRetrait != null) body['modeRetrait'] = modeRetrait;
-
-    final response = await ApiClient.post('/transactions', body);
+    });
     if (response.statusCode == 201) {
       return TransactionModel.fromJson(
           jsonDecode(response.body) as Map<String, dynamic>);

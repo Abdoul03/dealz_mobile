@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 class Constant {
-  static const primaireColor = Color(0xFF355872);
-  static const secondaryColor = Color(0xFF7AAACE);
-  static const tertiaoreColor = Color(0xFF9CD5FF);
-  static const quatroColor = Color(0xFFF7F8F0);
+  static const primaireColor = Color(0xFF174E43);
+  static const secondaryColor = Color(0xFFE27B5B);
+  static const tertiaoreColor = Color(0xFFDFEAE4);
+  static const quatroColor = Color(0xFFF7F5EF);
 
-  static const backgroundColor = Color(0xFFF8F9FA);
+  static const backgroundColor = Color(0xFFF7F5EF);
 
   // IP du Mac sur le réseau local (obtenue via `ipconfig getifaddr en0`)
   static const _macIp = "192.168.1.52";

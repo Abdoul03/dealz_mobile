@@ -7,6 +7,11 @@ class AnnonceService {
   Future<List<AnnonceModel>> getAnnonces({
     String? categorieId,
     String? motCle,
+    String? taille,
+    double? prixMin,
+    double? prixMax,
+    int page = 0,
+    int size = 20,
   }) async {
     String path = '/annonces';
     final params = <String, String>{};
@@ -16,6 +21,13 @@ class AnnonceService {
     if (motCle != null && motCle.isNotEmpty) {
       params['motCle'] = motCle;
     }
+    if (taille != null && taille.isNotEmpty) {
+      params['taille'] = taille;
+    }
+    if (prixMin != null) params['prixMin'] = prixMin.toString();
+    if (prixMax != null) params['prixMax'] = prixMax.toString();
+    params['page'] = page.toString();
+    params['size'] = size.toString();
     if (params.isNotEmpty) {
       path += '?${params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
     }
@@ -67,6 +79,22 @@ class AnnonceService {
           jsonDecode(response.body) as Map<String, dynamic>);
     }
     throw Exception(ApiClient.parseError(response));
+  }
+
+  Future<AnnonceModel> archiverAnnonce(String id) async {
+    final response = await ApiClient.post('/annonces/$id/archiver');
+    if (response.statusCode == 200) {
+      return AnnonceModel.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    throw Exception(ApiClient.parseError(response));
+  }
+
+  Future<void> supprimerAnnonce(String id) async {
+    final response = await ApiClient.delete('/annonces/$id');
+    if (response.statusCode != 204) {
+      throw Exception(ApiClient.parseError(response));
+    }
   }
 
   Future<List<CategorieModel>> getCategories() async {

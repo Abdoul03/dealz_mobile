@@ -3,6 +3,7 @@ import 'package:dealz/screens/login_screen.dart';
 import 'package:dealz/screens/onboarding_screen.dart';
 import 'package:dealz/services/auth_service.dart';
 import 'package:dealz/services/navigation_service.dart';
+import 'package:dealz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 // Observateur global de navigation — permet à HomeScreen de détecter
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Dealz',
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       navigatorKey: navigatorKey,
       navigatorObservers: [routeObserver],
       home: const _SplashRouter(),

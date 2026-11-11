@@ -18,139 +18,47 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _buying = false;
-
-  static const _paymentOptions = [
-    {'value': 'ORANGE_MONEY', 'label': 'Orange Money'},
-    {'value': 'MOOV_MONEY', 'label': 'Moov Money'},
-    {'value': 'ESPECES', 'label': 'Espèces'},
-    {'value': 'CARTE_BANCAIRE', 'label': 'Carte bancaire'},
-  ];
-
-  static const _retraitOptions = [
-    'MAIN_PROPRE',
-    'POINT_RELAIS',
-    'DOMICILE',
-  ];
+  bool _reserved = false;
+  int _photoIndex = 0;
 
   Future<void> _acheter() async {
-    String? selectedPayment;
-    String selectedRetrait = 'MAIN_PROPRE';
+    final currentUserId = await AuthService().getCurrentUserId();
+    if (currentUserId == widget.annonce.vendeur.id) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('C’est votre propre annonce.')),
+      );
+      return;
+    }
 
-    final result = await showModalBottomSheet<Map<String, String?>>(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 24, 20, MediaQuery.of(ctx).viewInsets.bottom + 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2))),
-              ),
-              const SizedBox(height: 20),
-              const Text('Finaliser l\'achat',
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(
-                '${widget.annonce.titre} — ${_formatPrix(widget.annonce.prix)} FCFA',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
-              const SizedBox(height: 20),
-              const Text('Mode de paiement',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _paymentOptions.map((opt) {
-                  final sel = selectedPayment == opt['value'];
-                  return ChoiceChip(
-                    label: Text(opt['label']!),
-                    selected: sel,
-                    selectedColor: Constant.primaireColor,
-                    labelStyle: TextStyle(
-                        color: sel ? Colors.white : Colors.black87),
-                    onSelected: (_) =>
-                        setSheet(() => selectedPayment = opt['value']),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              const Text('Mode de remise',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _retraitOptions.map((opt) {
-                  final sel = selectedRetrait == opt;
-                  return ChoiceChip(
-                    label: Text(opt.replaceAll('_', ' ')),
-                    selected: sel,
-                    selectedColor: Constant.primaireColor,
-                    labelStyle: TextStyle(
-                        color: sel ? Colors.white : Colors.black87),
-                    onSelected: (_) =>
-                        setSheet(() => selectedRetrait = opt),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: selectedPayment == null
-                      ? null
-                      : () => Navigator.pop(ctx, {
-                            'payment': selectedPayment,
-                            'retrait': selectedRetrait
-                          }),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Constant.primaireColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text('Confirmer',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (result == null || result['payment'] == null) return;
-
+    if (!mounted) return;
     setState(() => _buying = true);
     try {
       await TransactionService().initierTransaction(
         annonceId: widget.annonce.id,
-        typePaiement: result['payment']!,
-        modeRetrait: result['retrait'],
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text(
-            'Transaction initiée ! Les fonds sont en séquestre.'),
-        backgroundColor: Constant.primaireColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ));
+      setState(() => _reserved = true);
+      final openChat = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Article réservé'),
+          content: const Text(
+            'Écrivez au vendeur pour convenir du rendez-vous. Le paiement se fait directement entre vous, hors Dealz.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Plus tard'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Écrire au vendeur'),
+            ),
+          ],
+        ),
+      );
+      if (openChat == true && mounted) await _contacterVendeur();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -190,6 +98,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final a = widget.annonce;
+    final canReserve = a.statut == 'PUBLIEE' && !_reserved;
+    final photos = <String>{
+      if (a.urlImage != null && a.urlImage!.isNotEmpty) a.urlImage!,
+      ...a.urlImages.where((url) => url.isNotEmpty),
+    }.toList();
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -204,21 +117,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     SizedBox(
                       height: 380,
                       width: double.infinity,
-                      child: a.urlImage != null
-                          ? CachedNetworkImage(
-                              imageUrl: a.urlImage!,
-                              fit: BoxFit.cover,
-                              placeholder: (ctx, url) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                      child: CircularProgressIndicator())),
-                              errorWidget: (ctx, url, err) => Image.asset(
-                                  'assets/images/jordan-air-jordan.webp',
-                                  fit: BoxFit.cover),
-                            )
-                          : Image.asset(
+                      child: photos.isEmpty
+                          ? Image.asset(
                               'assets/images/jordan-air-jordan.webp',
-                              fit: BoxFit.cover),
+                              fit: BoxFit.cover,
+                            )
+                          : PageView.builder(
+                              itemCount: photos.length,
+                              onPageChanged: (index) =>
+                                  setState(() => _photoIndex = index),
+                              itemBuilder: (context, index) =>
+                                  CachedNetworkImage(
+                                imageUrl: photos[index],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Constant.backgroundColor,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    Image.asset(
+                                  'assets/images/jordan-air-jordan.webp',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
                     ),
                     Container(
                       height: 100,
@@ -248,6 +172,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 fontSize: 12)),
                       ),
                     ),
+                    if (photos.length > 1)
+                      Positioned(
+                        bottom: 14,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            photos.length,
+                            (index) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              width: index == _photoIndex ? 18 : 6,
+                              height: 6,
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              decoration: BoxDecoration(
+                                color: index == _photoIndex
+                                    ? Colors.white
+                                    : Colors.white60,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 
@@ -283,7 +231,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Icon(LucideIcons.map_pin,
                               size: 15, color: Colors.grey[600]),
                           const SizedBox(width: 4),
-                          Text(a.pointRetrait ?? 'Localisation non précisée',
+                          Text(a.quartier ?? 'Lieu de rendez-vous à convenir',
                               style: TextStyle(
                                   color: Colors.grey[600], fontSize: 14)),
                           const SizedBox(width: 12),
@@ -303,6 +251,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ],
                       ),
+
+                      if ((a.marque != null && a.marque!.isNotEmpty) ||
+                          (a.taille != null && a.taille!.isNotEmpty)) ...[
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (a.marque != null && a.marque!.isNotEmpty)
+                              _detailTag('Marque', a.marque!),
+                            if (a.taille != null && a.taille!.isNotEmpty)
+                              _detailTag('Taille', a.taille!),
+                          ],
+                        ),
+                      ],
 
                       const Divider(height: 32),
 
@@ -438,7 +401,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _buying ? null : _acheter,
+                      onPressed: _buying || !canReserve ? null : _acheter,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Constant.primaireColor,
                         foregroundColor: Colors.white,
@@ -454,7 +417,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : const Text('Acheter',
+                          : Text(
+                              canReserve
+                                  ? 'Réserver'
+                                  : _reserved || a.statut == 'RESERVEE'
+                                      ? 'Déjà réservé'
+                                      : a.statut == 'VENDUE'
+                                          ? 'Vendu'
+                                          : 'Indisponible',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15)),
@@ -474,5 +444,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         .toStringAsFixed(0)
         .replaceAllMapped(
             RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+  }
+
+  Widget _detailTag(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Constant.backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text('$label : $value', style: const TextStyle(fontSize: 13)),
+    );
   }
 }

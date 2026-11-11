@@ -4,6 +4,9 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ProductCard extends StatelessWidget {
   final String titre;
+  final String? marque;
+  final String? taille;
+  final String? etat;
   final double prix;
   final String? localisation;
   final String? imageUrl;
@@ -11,6 +14,9 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     this.titre = 'Article',
+    this.marque,
+    this.taille,
+    this.etat,
     this.prix = 0,
     this.localisation,
     this.imageUrl,
@@ -21,10 +27,8 @@ class ProductCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEAE8E1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +38,37 @@ class ProductCard extends StatelessWidget {
             child: ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(15)),
-              child: _buildImage(),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildImage(),
+                  if (etat != null && etat!.isNotEmpty)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.94),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          child: Text(
+                            etat!,
+                            style: const TextStyle(
+                              color: Color(0xFF174E43),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           Padding(
@@ -49,11 +83,24 @@ class ProductCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if ((marque != null && marque!.isNotEmpty) ||
+                    (taille != null && taille!.isNotEmpty)) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    [
+                      if (marque != null && marque!.isNotEmpty) marque!,
+                      if (taille != null && taille!.isNotEmpty) taille!,
+                    ].join(' · '),
+                    style: const TextStyle(color: Colors.black54, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   '${_formatPrix(prix)} FCFA',
                   style: const TextStyle(
-                    color: Color(0xFF2D6A4F),
+                    color: Color(0xFF174E43),
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
